@@ -1,0 +1,12 @@
+# The `customer` agent preset: the restricted external-customer assistant.
+#
+# This is the ONLY composition external customer messages ever run under, and it
+# deliberately excludes shell, filesystem, network, delegation, plan mode, and
+# every other tool the `standard` coding agent carries. Inbound customer text is
+# untrusted input, so the model here can only reply (wecom.reply) and search the
+# read-only knowledge base (wecom.knowledge.search).
+# (The persona row is added when this preset is wired into the real app profile,
+# where `@deepseek-ai/dsh-persona` is an installed dependency.)
+
+- id: wecom-tools
+  name: '@deepseek-ai/dsh-wecom-channel/tools'
