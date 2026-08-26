@@ -300,6 +300,9 @@ importers:
       '@deepseek-ai/dsh-web-app':
         specifier: workspace:^
         version: link:../../packages/bundle/web-app
+      '@deepseek-ai/dsh-wecom-bundle':
+        specifier: workspace:^
+        version: link:../../packages/wecom/bundle
       '@deepseek-ai/dsh-workflow-worker-thread':
         specifier: workspace:^
         version: link:../../packages/workflow/workflow-worker-thread
@@ -8494,6 +8497,12 @@ importers:
       '@deepseek-ai/dsh-web':
         specifier: workspace:^
         version: link:../web
+
+  packages/wecom/bundle:
+    dependencies:
+      '@deepseek-ai/dsh-wecom-channel':
+        specifier: workspace:^
+        version: link:../wecom-channel
 
   packages/wecom/wecom-channel:
     dependencies:

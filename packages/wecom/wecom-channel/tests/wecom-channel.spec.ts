@@ -19,7 +19,7 @@ import { apply as wecomChannel } from '../src/index.ts'
 import { apply as mockAdapter } from '../src/mock-adapter.ts'
 import type { MockWecomAdapter } from '../src/mock-adapter.ts'
 
-const PRESET_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../presets')
+const PRESET_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../../apps/cli/config/agent-presets')
 
 function textResponse(text: string): StreamChunk[] {
   return [

@@ -1,0 +1,13 @@
+# The dsh-wecom bundle layer: the WeCom channel for the workbench profile.
+#
+# Mounts the in-memory mock adapter (phase-1 development; a real vworkApi.dll
+# adapter replaces it through the same seam) and the channel driver, which maps
+# external WeCom chats to Harness agents composed from the `customer` preset.
+# The `customer` preset itself ships in the app's agent-presets root
+# (apps/cli/config/agent-presets/customer).
+- insert:
+    - id: wecom-adapter-mock
+      name: '@deepseek-ai/dsh-wecom-channel/mock-adapter'
+
+    - id: wecom-channel
+      name: '@deepseek-ai/dsh-wecom-channel'

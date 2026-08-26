@@ -1,0 +1,30 @@
+{
+  "name": "@deepseek-ai/dsh-wecom-bundle",
+  "description": "The WeCom channel bundle: mounts the channel adapter and driver into the workbench profile",
+  "version": "0.1.1-rc.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haojing8312/deepseek-harness-wecom.git",
+    "directory": "packages/wecom/bundle"
+  },
+  "type": "module",
+  "exports": {
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "cordis.patch.yml"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-wecom-channel": "workspace:^"
+  }
+}
