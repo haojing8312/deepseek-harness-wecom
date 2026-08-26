@@ -11,6 +11,8 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 // Type-only: pulls the shared `wecom/session` SessionEventMap and `wecom`
 // MessageSourceMap merges into host consumers of this module.
 import type {} from './session-events.ts'
+export type { WecomChannelAdapterStatus, WecomChannelStatusSnapshot } from './status.ts'
+import type { WecomChannelAdapterStatus } from './status.ts'
 
 /** One inbound message from an external WeCom customer chat. */
 export interface WecomInboundMessage {
@@ -19,14 +21,6 @@ export interface WecomInboundMessage {
   /** The text the customer sent. */
   readonly text: string
 }
-
-/** Connection state of the WeCom channel, surfaced to the Web UI. */
-export type WecomChannelAdapterStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'online'
-  | 'reconnecting'
-  | 'offline'
 
 /**
  * A WeCom channel adapter — the swappable provider behind the bridge. The mock
@@ -50,7 +44,7 @@ export interface WecomChannelAdapter {
 
 /**
  * Host-plane WeCom channel service. The channel driver publishes it; the
- * preset-mounted tools resolve it through `ctx.get('wecomChannel')`.
+ * preset-mounted tools resolve it through `ctx.get('wecomChannelService')`.
  */
 export interface WecomChannelService {
   /** The active channel adapter. */
@@ -67,7 +61,12 @@ declare module '@deepseek-ai/cordis' {
   interface Context {
     /** The active WeCom channel adapter (set by an adapter provider). */
     wecomAdapter: WecomChannelAdapter
-    /** Host-plane WeCom channel service (adapter + session↔chat mapping). */
-    wecomChannel: WecomChannelService
+    /**
+     * Host-plane WeCom channel service (adapter + session↔chat mapping), the
+     * preset-mounted tools reach. Named distinctly from the client-facing
+     * `wecomChannel` remote (the gateway), which owns the `remote.wecomChannel`
+     * surface.
+     */
+    wecomChannelService: WecomChannelService
   }
 }

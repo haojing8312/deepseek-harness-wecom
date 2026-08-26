@@ -75,7 +75,7 @@ export function apply(ctx: Context, config: Config): void {
       if (exec.agent === undefined) {
         throw new Error('wecom.reply requires an owning WeCom session')
       }
-      const channel = ctx.get('wecomChannel')
+      const channel = ctx.get('wecomChannelService')
       const externalChatId = channel?.externalChatFor(exec.agent.session.id)
       if (channel === undefined || externalChatId === undefined) {
         throw new Error('wecom.reply can only be called from a WeCom customer session')

@@ -126,13 +126,13 @@ describe('wecom-channel', () => {
       textResponse('好的'),
     ])
     const mock = ctx.wecomAdapter as MockWecomAdapter
-    expect(ctx.wecomChannel.sessionFor('ext-100')).toBeUndefined()
+    expect(ctx.wecomChannelService.sessionFor('ext-100')).toBeUndefined()
     await mock.simulate({ externalChatId: 'ext-100', text: '第一条消息' })
-    const sessionId = ctx.wecomChannel.sessionFor('ext-100')
+    const sessionId = ctx.wecomChannelService.sessionFor('ext-100')
     expect(sessionId).toBeDefined()
     await mock.simulate({ externalChatId: 'ext-100', text: '第二条消息' })
-    expect(ctx.wecomChannel.sessionFor('ext-100')).toBe(sessionId)
-    const agent = ctx.wecomChannel.agentFor('ext-100')
+    expect(ctx.wecomChannelService.sessionFor('ext-100')).toBe(sessionId)
+    const agent = ctx.wecomChannelService.agentFor('ext-100')
     const wecomMessages = agent!.session.events.filter(
       (event) => event.type === 'user/message' && event.data.source.kind === 'wecom',
     )
@@ -144,7 +144,7 @@ describe('wecom-channel', () => {
     const { ctx } = await harness([textResponse('ok')])
     const mock = ctx.wecomAdapter as MockWecomAdapter
     await mock.simulate({ externalChatId: 'ext-200', text: '第一条消息' })
-    const agent = ctx.wecomChannel.agentFor('ext-200')
+    const agent = ctx.wecomChannelService.agentFor('ext-200')
     const marker = agent!.session.events.find((event) => event.type === 'wecom/session')
     expect(marker).toBeDefined()
     if (marker?.type !== 'wecom/session') throw new Error('expected a wecom/session event')

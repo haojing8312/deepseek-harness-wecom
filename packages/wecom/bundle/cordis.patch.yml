@@ -9,5 +9,8 @@
     - id: wecom-adapter-mock
       name: '@deepseek-ai/dsh-wecom-channel/mock-adapter'
 
+    - id: wecom-channel-gateway
+      name: '@deepseek-ai/dsh-wecom-channel/gateway'
+
     - id: wecom-channel
       name: '@deepseek-ai/dsh-wecom-channel'

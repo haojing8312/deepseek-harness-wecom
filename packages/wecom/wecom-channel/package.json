@@ -30,6 +30,22 @@
       "types": "./lib/types/session-events.d.ts",
       "default": "./lib/types/session-events.js"
     },
+    "./status": {
+      "types": "./lib/types/status.d.ts",
+      "default": "./lib/types/status.js"
+    },
+    "./gateway": {
+      "types": "./lib/types/gateway.d.ts",
+      "default": "./lib/types/gateway.js"
+    },
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./remote": {
+      "types": "./lib/typert.remote-client.d.ts",
+      "default": "./lib/typert.remote-client.js"
+    },
     "./invariant": {
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"
@@ -41,7 +57,11 @@
     "lib/index.js",
     "lib/invariant.js",
     "lib/types/**/*.js",
-    "lib/types/**/*.d.ts"
+    "lib/types/**/*.d.ts",
+    "lib/typert.host.js",
+    "lib/typert.host.d.ts",
+    "lib/typert.remote-client.js",
+    "lib/typert.remote-client.d.ts"
   ],
   "license": "MIT",
   "dependencies": {
@@ -55,7 +75,8 @@
     "@deepseek-ai/dsh-invariants": "workspace:^",
     "@deepseek-ai/dsh-llm": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^"
+    "@deepseek-ai/dsh-tools": "workspace:^",
+    "@deepseek-ai/dsh-typert-protocol": "workspace:^"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
@@ -68,6 +89,7 @@
     "@deepseek-ai/dsh-session": "workspace:^",
     "@deepseek-ai/dsh-system-prompt": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^",
+    "@deepseek-ai/dsh-typert-protocol": "workspace:^",
     "@deepseek-ai/dsh-wecom-channel": "workspace:^"
   }
 }

@@ -11,12 +11,25 @@
     "directory": "packages/wecom/bundle"
   },
   "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
   "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
-    "cordis.patch.yml"
+    "lib/index.js",
+    "lib/invariant.js",
+    "cordis.patch.yml",
+    "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
   "dsh": {
@@ -26,5 +39,13 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-wecom-channel": "workspace:^"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:^"
   }
 }

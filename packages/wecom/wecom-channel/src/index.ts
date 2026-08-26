@@ -59,7 +59,7 @@ export function apply(ctx: Context, config: Config): void {
   const bySession = new Map<SessionId, string>()
   const live = new Map<string, Agent>()
 
-  ctx.provide('wecomChannel', {
+  ctx.provide('wecomChannelService', {
     adapter: channel,
     externalChatFor(sessionId) {
       return bySession.get(sessionId)

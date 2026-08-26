@@ -905,6 +905,9 @@ importers:
       '@deepseek-ai/dsh-typert-registry':
         specifier: workspace:^
         version: link:../../typert/registry
+      '@deepseek-ai/dsh-wecom-channel':
+        specifier: workspace:^
+        version: link:../../wecom/wecom-channel
 
   packages/attachment/attachment:
     devDependencies:
@@ -8506,12 +8509,22 @@ importers:
       '@deepseek-ai/dsh-wecom-channel':
         specifier: workspace:^
         version: link:../wecom-channel
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
 
   packages/wecom/ui-wecom:
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: workspace:^
+        version: link:../../api/remotes
       '@deepseek-ai/dsh-client-runtime':
         specifier: workspace:^
         version: link:../../client/runtime
@@ -8582,6 +8595,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: workspace:^
         version: link:../../core/tools
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
       '@deepseek-ai/dsh-wecom-channel':
         specifier: workspace:^
         version: 'link:'
