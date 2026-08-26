@@ -26,6 +26,10 @@
       "types": "./lib/types/mock-adapter.d.ts",
       "default": "./lib/types/mock-adapter.js"
     },
+    "./session-events": {
+      "types": "./lib/types/session-events.d.ts",
+      "default": "./lib/types/session-events.js"
+    },
     "./invariant": {
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"

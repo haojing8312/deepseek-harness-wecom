@@ -8,6 +8,9 @@
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionId } from '@deepseek-ai/dsh-session'
+// Type-only: pulls the shared `wecom/session` SessionEventMap and `wecom`
+// MessageSourceMap merges into host consumers of this module.
+import type {} from './session-events.ts'
 
 /** One inbound message from an external WeCom customer chat. */
 export interface WecomInboundMessage {
@@ -17,6 +20,14 @@ export interface WecomInboundMessage {
   readonly text: string
 }
 
+/** Connection state of the WeCom channel, surfaced to the Web UI. */
+export type WecomChannelAdapterStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'online'
+  | 'reconnecting'
+  | 'offline'
+
 /**
  * A WeCom channel adapter — the swappable provider behind the bridge. The mock
  * adapter and the real vworkApi.dll adapter implement the same seam, so moving
@@ -25,6 +36,8 @@ export interface WecomInboundMessage {
 export interface WecomChannelAdapter {
   /** Stable adapter id, e.g. `mock` or `vworkapi`. */
   readonly id: string
+  /** Current connection status, surfaced to the Web UI. */
+  readonly status: WecomChannelAdapterStatus
   /** Connect the channel (DLL injection / transport). No-op for the mock. */
   start(): Promise<void>
   /** Disconnect the channel. */
@@ -56,12 +69,5 @@ declare module '@deepseek-ai/cordis' {
     wecomAdapter: WecomChannelAdapter
     /** Host-plane WeCom channel service (adapter + session↔chat mapping). */
     wecomChannel: WecomChannelService
-  }
-}
-
-declare module '@deepseek-ai/dsh-llm' {
-  interface MessageSourceMap {
-    /** An inbound message from an external WeCom customer chat. */
-    wecom: { kind: 'wecom'; externalChatId: string }
   }
 }

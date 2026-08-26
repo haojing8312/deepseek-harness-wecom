@@ -94,6 +94,7 @@ export function apply(ctx: Context, config: Config): void {
         await presetRoster.mount(agentCtx, preset)
       },
     })
+    handle.agent.session.append('wecom/session', { externalChatId })
     byExternal.set(externalChatId, sessionId)
     bySession.set(sessionId, externalChatId)
     live.set(externalChatId, handle.agent)

@@ -18,6 +18,8 @@ import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { apply as wecomChannel } from '../src/index.ts'
 import { apply as mockAdapter } from '../src/mock-adapter.ts'
 import type { MockWecomAdapter } from '../src/mock-adapter.ts'
+// Type-only: loads the `wecom/session` + `wecom` source merges into this test program.
+import type {} from '../src/session-events.ts'
 
 const PRESET_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../../../apps/cli/config/agent-presets')
 
@@ -135,6 +137,18 @@ describe('wecom-channel', () => {
       (event) => event.type === 'user/message' && event.data.source.kind === 'wecom',
     )
     expect(wecomMessages).toHaveLength(2)
+    await ctx.fiber.dispose()
+  })
+
+  it('appends a wecom/session marker when a customer session is created', async () => {
+    const { ctx } = await harness([textResponse('ok')])
+    const mock = ctx.wecomAdapter as MockWecomAdapter
+    await mock.simulate({ externalChatId: 'ext-200', text: '第一条消息' })
+    const agent = ctx.wecomChannel.agentFor('ext-200')
+    const marker = agent!.session.events.find((event) => event.type === 'wecom/session')
+    expect(marker).toBeDefined()
+    if (marker?.type !== 'wecom/session') throw new Error('expected a wecom/session event')
+    expect(marker.data.externalChatId).toBe('ext-200')
     await ctx.fiber.dispose()
   })
 })
