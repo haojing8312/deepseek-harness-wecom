@@ -28,6 +28,9 @@ export const inject = ['agents']
 /** Settings namespace for the WeCom workbench injection configuration. */
 export const WECOM_SETTINGS_NAMESPACE = settingsNamespace('wecom')
 
+/** Namespace pairing key for the customer knowledge base management card. */
+export const WECOM_KNOWLEDGE_SETTINGS_NAMESPACE = settingsNamespace('wecom-knowledge')
+
 export interface Config {
   /** Agent preset every external-customer session is composed from. */
   preset?: string
@@ -72,6 +75,12 @@ export function apply(ctx: Context, config: Config): void {
       const current = source()
       ctx.logger.info(`wecom settings changed: adapter=${current.adapter ?? 'mock'}, autoReply=${current.autoReply ?? true}`)
     },
+  })
+  // The knowledge card pairs with a served namespace; it manages files over the
+  // remote, so this section carries no settings of its own.
+  installSettingsSection(ctx, WECOM_KNOWLEDGE_SETTINGS_NAMESPACE, z.object({}), {}, {
+    setSource: () => {},
+    onChange: () => {},
   })
   // Host-plane values published by sibling plugins; read them through the
   // global service store (`ctx.get`), never the property proxy, so async
