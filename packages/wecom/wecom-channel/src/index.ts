@@ -15,6 +15,9 @@ import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 // Type-only: brings the `ctx.agentPresets` Context augmentation into scope.
 import type {} from '@deepseek-ai/dsh-agent-presets'
+// Type-only: the `session/title` SessionEventMap augmentation the driver pins a
+// WeCom customer title with.
+import type {} from '@deepseek-ai/dsh-session-title'
 import type {} from '@deepseek-ai/dsh-session-persistence'
 import type { WecomChannelService, WecomInboundMessage } from './types.ts'
 
@@ -147,7 +150,20 @@ export function apply(ctx: Context, config: Config): void {
       })
       created = true
     }
-    if (created) handle.agent.session.append('wecom/session', { externalChatId })
+    if (created) {
+      handle.agent.session.append('wecom/session', { externalChatId })
+    }
+    // Pin a human-facing sidebar title (the LLM title provider only handles
+    // `user`-source messages, so it never titles a WeCom session). Backfilled on
+    // resume when a pre-title session is reopened.
+    const hasTitle = handle.agent.session.events.some((event) => event.type === 'session/title')
+    if (!hasTitle) {
+      handle.agent.session.append('session/title', {
+        title: `企微客户 ${externalChatId}`,
+        messageSeqs: [],
+        source: { kind: 'user' },
+      })
+    }
     byExternal.set(externalChatId, sessionId)
     bySession.set(sessionId, externalChatId)
     live.set(externalChatId, handle.agent)

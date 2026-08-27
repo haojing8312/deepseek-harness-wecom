@@ -149,6 +149,8 @@ describe('wecom-channel', () => {
     expect(marker).toBeDefined()
     if (marker?.type !== 'wecom/session') throw new Error('expected a wecom/session event')
     expect(marker.data.externalChatId).toBe('ext-200')
+    const title = agent!.session.events.find((event) => event.type === 'session/title')
+    expect(title?.type === 'session/title' && title.data.title).toBe('企微客户 ext-200')
     await ctx.fiber.dispose()
   })
 })

@@ -31,6 +31,12 @@
     },
     {
       "path": "../../preset/agent-presets"
+    },
+    {
+      "path": "../../session/session-title"
+    },
+    {
+      "path": "../../session/session-projection"
     }
   ]
 }
