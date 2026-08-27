@@ -193,12 +193,26 @@
 - `docs/architecture.md` — DSH 架构（扩展点权威说明）
 - `docs/cookbook/extension-cookbook.md` — 能力到扩展点映射
 
-## 10. vworkApi 实机验证（M1 交付点）
+## 10. vworkApi 实机验证（M1 交付点）✅ 已验证
 
-真实适配器 `@deepseek-ai/dsh-wecom-channel/vworkapi-adapter` 已实现（协议见参考 §3，含注入/命令/回调，单测覆盖）。要实机验证：
+真实适配器 `@deepseek-ai/dsh-wecom-channel/vworkapi-adapter` 已实现并**实机验证通过**（微信 → DLL 钩子 → 回调 → 客户会话 → LLM 回复 → 自动发送回客户）。验证环境：`D:\worksoft\WXWork` 企微 5.0.3.6005 + `D:\worksoft\WeiClaw` 里的 vworkApi.dll/inject_tool。
 
-1. **安装固定版企微客户端**：运行 `D:\worksoft\WeiClaw\resources\wecom\WeCom_5.0.3.6005.exe`，用测试企微账号登录（确认版本 5.0.3.6005）。
-2. **切换适配器**：编辑 `packages/wecom/bundle/cordis.patch.yml`，禁用 `wecom-adapter-mock`、启用 `wecom-adapter-vworkapi`（DLL 路径/端口已配好，key 用内嵌专业版 key）。重启 `pnpm dsh web`。
-3. **验证**：Web UI 企微卡片状态点应显示"在线"；给该企微账号发一条微信消息，应触发客户会话节点 + 自动回复。
-4. **注意**：企微版本升级会破坏注入（R-2）——参考 §3.6 硬化设置（关闭自动更新/自动登录调整）。vworkApi 是单线程 HTTP，多开需端口递增。
+### 实机流程与关键经验
+
+1. **注入必须用 WeiClaw 式流程**：先杀运行中的企微 → `inject_tool` 用 `--exe_path` 启动**单一全新实例**并注入 → 等登录。**不要**对已独立运行的企微注入——inject_tool 会拉起新实例（孤儿进程）而打不中已登录主进程。适配器 `killWecomBeforeStart` 控制。
+2. **DeepSeek key**：根 `.env` 配 `DEEPSEEK_API_KEY`（gitignored，启动时加载）。
+3. **工具名不能用点号**：`wecom.reply` 等点号名被 DeepSeek API 校验拒绝（`Invalid 'tools[0].function.name'`）——已改名 `wecom_reply`/`wecom_knowledge_search`（下划线）。
+4. **回复发送**：模型不可靠地调用 `wecom_reply`，驱动改为**自动发送 agent 最终文本**（对标 WeiClaw MessageSender）；`wecom_reply` 保留为显式审计路径。
+5. **必须过滤自回显**：DLL 把发出的回复也回调回来（`is_self_msg=1`），不过滤会触发回复死循环。适配器按 `is_self_msg` 丢弃。
+6. **客户 preset 需要引导指令**：tools 插件注册 system-prompt section，指示模型"回复必须调用 wecom_reply"。
+7. **注意**：企微版本升级会破坏注入（R-2）——硬化设置（关闭自动更新等，参考 §3.6）。vworkApi 单线程 HTTP，多开端口递增。
+
+### 复现步骤
+
+1. 装好固定版企微 + vworkApi（本机已有）。
+2. `.env` 配 `DEEPSEEK_API_KEY`。
+3. bundle 里 vworkapi 适配器已启用（`killWecomBeforeStart: true`）。
+4. `pnpm dsh web` → 自动杀企微、重启、注入、等登录（可能需扫码一次）。
+5. 微信发消息 → 收到自动回复。
+
 
