@@ -165,7 +165,11 @@ export function apply(ctx: Context, config: Config): void {
 
   ctx.effect(() => {
     channel.onMessage((message) => onInbound(message))
-    void channel.start()
+    // A failed connect (e.g. the WeCom client is not running) must not take the
+    // tree down: the adapter flips to 'offline' and the UI surfaces it.
+    channel.start().catch((error: unknown) => {
+      ctx.logger.warn(`wecom channel start failed: ${error instanceof Error ? error.message : String(error)}`)
+    })
     return () => {
       void channel.stop()
     }
