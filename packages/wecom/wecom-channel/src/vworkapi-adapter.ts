@@ -9,7 +9,7 @@
  */
 
 import { createServer, type Server } from 'node:http'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import type { Context } from '@deepseek-ai/cordis'
 import type {
   WecomChannelAdapter, WecomChannelAdapterStatus, WecomInboundMessage,
@@ -27,6 +27,7 @@ export const VWORKAPI_DEFAULT_KEY =
   'RL7pWlWf1F5CWQcOSnszqGXhS1Tn2dRGawd2HoF+8vbb9Zw7XWQnNXpuKFrgi0NN'
 
 /** vworkApi command codes used by this adapter. */
+export const VWORK_CMD_LOGIN_STATUS = 1000
 export const VWORK_CMD_SEND_TEXT = 3000
 export const VWORK_CMD_PROCESS_PID = 10004
 
@@ -52,6 +53,15 @@ export interface VworkApiAdapterConfig {
   callbackToken?: string
   /** Bridge-reachability timeout during start (default 30s). */
   timeoutMs?: number
+  /**
+   * Kill every running WXWork/WeCom process before injecting, then let
+   * inject_tool launch a fresh single instance and inject it (the WeiClaw
+   * connect flow). Required when a client is already running independently —
+   * inject_tool would otherwise spawn a second, unlogged instance.
+   */
+  killWecomBeforeStart?: boolean
+  /** How long to wait for the account to reach login (status 1) after injection. */
+  loginTimeoutMs?: number
   /** Skip the inject_tool spawn (unit tests / diagnostics against a live bridge). */
   skipInject?: boolean
 }
@@ -78,9 +88,14 @@ async function callApi(
 function messageFromCallback(payload: unknown, selfUserId: string | undefined): WecomInboundMessage | undefined {
   const root = payload as { type?: unknown; self_user_id?: unknown; message?: Record<string, unknown> }
   if (root.type !== VWORK_CALLBACK_MESSAGE) return undefined
-  const msg = (root.message ?? payload) as { user_id?: unknown; msg_type?: unknown; content?: unknown }
+  const msg = (root.message ?? payload) as {
+    user_id?: unknown; msg_type?: unknown; content?: unknown; is_self_msg?: unknown
+  }
   if (msg.msg_type !== VWORK_MSG_TEXT) return undefined
   if (typeof msg.user_id !== 'string' || msg.user_id === '') return undefined
+  // Drop our own sent replies echoing back (the DLL reports every chat message,
+  // including the ones this adapter sent): they would re-trigger the agent.
+  if (msg.is_self_msg === 1 || msg.is_self_msg === true) return undefined
   if (selfUserId !== undefined && msg.user_id === selfUserId) return undefined
   const text = typeof msg.content === 'string' ? msg.content.trim() : ''
   if (text === '') return undefined
@@ -156,6 +171,30 @@ export function createVworkApiAdapter(config: VworkApiAdapterConfig): WecomChann
     throw new Error(`vworkApi bridge on :${dllPort} did not become reachable within ${timeoutMs}ms`)
   }
 
+  /** Best-effort kill of every running WXWork/WeCom client process. */
+  async function killWecom(): Promise<void> {
+    for (const image of ['WXWork.exe', 'WXWorkWeb.exe']) {
+      spawnSync('taskkill', ['/IM', image, '/F'], { stdio: 'ignore', windowsHide: true })
+    }
+    await delay(2000)
+  }
+
+  /** Poll the login status (type 1000) until the account is online (status 1). */
+  async function waitForLogin(loginTimeoutMs: number): Promise<void> {
+    const deadline = Date.now() + loginTimeoutMs
+    while (Date.now() < deadline) {
+      try {
+        const result = await callApi(dllPort, { type: VWORK_CMD_LOGIN_STATUS }, 2000)
+        const online = (result.data as { status?: unknown } | undefined)?.status === 1
+        if (online) return
+      } catch {
+        // bridge momentarily busy; keep polling
+      }
+      await delay(800)
+    }
+    throw new Error(`vworkApi account did not reach login within ${loginTimeoutMs}ms (scan the QR on the WXWork window)`)
+  }
+
   const adapter: WecomChannelAdapter & {
     startCallbackServer(): Promise<Server>
     readonly callbackServer: Server | undefined
@@ -171,18 +210,27 @@ export function createVworkApiAdapter(config: VworkApiAdapterConfig): WecomChann
     async start() {
       status = 'connecting'
       try {
+        if (config.killWecomBeforeStart === true) {
+          await killWecom()
+        }
         await startCallbackServer()
         if (!config.skipInject) {
-          const args = ['start', String(dllPort), `--key=${key}`]
-          if (config.callbackPort !== undefined) args.push(`--my_port=${String(config.callbackPort)}`)
-          if (config.wecomExePath !== undefined) args.push(`--exe_path=${config.wecomExePath}`)
           if (config.injectToolPath === undefined) {
             throw new Error('vworkapi adapter requires injectToolPath (path to inject_tool.exe)')
           }
+          if (config.wecomExePath === undefined) {
+            throw new Error('vworkapi adapter requires wecomExePath (path to WXWork.exe) for launch+inject')
+          }
+          // inject_tool launches a fresh WXWork instance and injects it; with the
+          // client already killed this is the single managed instance (WeiClaw flow).
+          const args = ['start', String(dllPort), `--key=${key}`]
+          if (config.callbackPort !== undefined) args.push(`--my_port=${String(config.callbackPort)}`)
+          args.push(`--exe_path=${config.wecomExePath}`)
           const child = spawn(config.injectToolPath, args, { stdio: 'ignore' })
           child.on('error', (error) => { status = 'offline'; throw error })
           child.unref()
           await waitForBridge()
+          await waitForLogin(config.loginTimeoutMs ?? 120_000)
         }
         status = 'online'
       } catch (error) {

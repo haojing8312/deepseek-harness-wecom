@@ -2,7 +2,7 @@
  * WeCom channel driver (host plane). Wires an adapter's inbound messages to
  * per-external-chat Harness agents composed from the restricted `customer`
  * preset, and publishes the {@link WecomChannelService} the preset-mounted
- * `wecom.reply` / `wecom.knowledge.search` tools consume.
+ * `wecom_reply` / `wecom_knowledge_search` tools consume.
  * @module @deepseek-ai/dsh-wecom-channel
  */
 
@@ -11,7 +11,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 // Type-only: brings the `ctx.agentPresets` Context augmentation into scope.
 import type {} from '@deepseek-ai/dsh-agent-presets'
@@ -154,13 +154,43 @@ export function apply(ctx: Context, config: Config): void {
     return handle.agent
   }
 
+  /** The latest assistant text produced since `firstSeq`, or undefined when none. */
+  function lastAssistantText(events: readonly SessionEvent[], firstSeq: number): string | undefined {
+    let text: string | undefined
+    for (const event of events) {
+      if (event.seq < firstSeq) continue
+      if (event.type !== 'assistant/message') continue
+      const joined = event.data.message.content
+        .filter((block) => block.type === 'text')
+        .map((block) => block.text)
+        .join('')
+      if (joined !== '') text = joined
+    }
+    return text
+  }
+
   async function onInbound(message: WecomInboundMessage): Promise<void> {
     const agent = await ensureAgent(message.externalChatId)
+    const firstSeq = agent.session.seq
     agent.followup(createUserMessage({
       content: [{ type: 'text', text: message.text }],
       source: { kind: 'wecom', externalChatId: message.externalChatId },
     }))
     await agent.whenIdle()
+    const turnEvents = agent.session.events.filter((event) => event.seq >= firstSeq)
+    // The reply is delivered either by an explicit wecom_reply tool call or, when
+    // the model just answered in prose, by auto-sending its final assistant text.
+    const repliedByTool = turnEvents.some(
+      (event) => event.type === 'tool/call' && event.data.name === 'wecom_reply',
+    )
+    if (repliedByTool) return
+    const reply = lastAssistantText(turnEvents, 0)
+    if (reply === undefined) {
+      // No usable answer — send a fallback so the customer is never left hanging.
+      await channel.sendText(message.externalChatId, '抱歉，我暂时无法回复，请稍后再试。')
+      return
+    }
+    await channel.sendText(message.externalChatId, reply)
   }
 
   ctx.effect(() => {

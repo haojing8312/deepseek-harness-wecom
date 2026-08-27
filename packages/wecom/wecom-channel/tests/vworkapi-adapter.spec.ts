@@ -99,6 +99,24 @@ describe('vworkapi adapter', () => {
     }
   })
 
+  it('drops our own sent replies echoing back (is_self_msg)', async () => {
+    const adapter = createVworkApiAdapter({ callbackPort: 0, skipInject: true })
+    const received: WecomInboundMessage[] = []
+    adapter.onMessage(async (message) => { received.push(message) })
+    try {
+      const server = await adapter.startCallbackServer()
+      await postJson(server, '/msg', {
+        type: 100,
+        self_user_id: 'me',
+        message: { user_id: 'ext-8', msg_type: 2, content: '我发的回复', msg_id: 'm5', is_self_msg: 1 },
+      })
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(received).toEqual([])
+    } finally {
+      await adapter.stop()
+    }
+  })
+
   it('rejects a callback with a mismatched bearer token when one is configured', async () => {
     const adapter = createVworkApiAdapter({ callbackPort: 0, callbackToken: 'secret', skipInject: true })
     const received: WecomInboundMessage[] = []

@@ -1,7 +1,7 @@
 /**
  * Model-facing WeCom tools, mounted by the `customer` agent preset.
- * `wecom.reply` sends one reply back to the customer through the host channel;
- * `wecom.knowledge.search` reads the read-only knowledge base. No shell,
+ * `wecom_reply` sends one reply back to the customer through the host channel;
+ * `wecom_knowledge_search` reads the read-only knowledge base. No shell,
  * filesystem, network, or delegation tools are composed into this preset —
  * external customer messages are untrusted input.
  * @module @deepseek-ai/dsh-wecom-channel/tools
@@ -15,7 +15,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type {} from './types.ts'
 
 export const name = 'wecom-tools'
-export const inject = ['tools']
+export const inject = ['tools', 'systemPrompt']
 
 export interface Config {
   /** Root directory of the read-only knowledge base. */
@@ -25,6 +25,15 @@ export interface Config {
 export const Config: z<Config> = z.object({
   knowledgeRoot: z.string(),
 })
+
+/** Customer-agent guidance: always deliver the reply through wecom_reply. */
+const CUSTOMER_GUIDANCE = [
+  '你是企微销冠工作台的客户服务助手。',
+  '用中文、简洁、专业地回复客户。',
+  '涉及产品/业务事实时，先调用 wecom_knowledge_search 查询只读知识库。',
+  '你的最终回复必须通过调用 wecom_reply 工具发送给客户，不要只输出文本。',
+  '你无法访问文件、互联网或内部系统，如实告知客户。',
+].join('\n')
 
 /** Read-only, top-k keyword search over a directory of markdown/text files. */
 async function searchKnowledge(
@@ -55,8 +64,13 @@ async function searchKnowledge(
 }
 
 export function apply(ctx: Context, config: Config): void {
+  ctx.systemPrompt.section({
+    name: 'wecom-customer-guidance',
+    order: 5,
+    text: CUSTOMER_GUIDANCE,
+  })
   ctx.tools.register(defineTool({
-    name: 'wecom.reply',
+    name: 'wecom_reply',
     description:
       'Send one text reply to the external WeCom customer this conversation belongs to. '
       + 'Call this to deliver your final answer to the customer.',
@@ -73,12 +87,12 @@ export function apply(ctx: Context, config: Config): void {
     },
     async execute(args, exec) {
       if (exec.agent === undefined) {
-        throw new Error('wecom.reply requires an owning WeCom session')
+        throw new Error('wecom_reply requires an owning WeCom session')
       }
       const channel = ctx.get('wecomChannelService')
       const externalChatId = channel?.externalChatFor(exec.agent.session.id)
       if (channel === undefined || externalChatId === undefined) {
-        throw new Error('wecom.reply can only be called from a WeCom customer session')
+        throw new Error('wecom_reply can only be called from a WeCom customer session')
       }
       await channel.adapter.sendText(externalChatId, args.text)
       return { sentTo: externalChatId }
@@ -87,7 +101,7 @@ export function apply(ctx: Context, config: Config): void {
   }))
 
   ctx.tools.register(defineTool({
-    name: 'wecom.knowledge.search',
+    name: 'wecom_knowledge_search',
     description:
       'Search the read-only product knowledge base. Use it for product facts before replying. '
       + 'Returns matching passages with their source file. Read-only.',

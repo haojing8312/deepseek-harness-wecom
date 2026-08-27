@@ -104,13 +104,13 @@ describe('wecom-channel', () => {
       },
     })
     const schemas = ctx.tools.schemas(handle.agent).map((schema) => schema.name).sort()
-    expect(schemas).toEqual(['wecom.knowledge.search', 'wecom.reply'])
+    expect(schemas).toEqual(['wecom_knowledge_search', 'wecom_reply'])
     await ctx.fiber.dispose()
   })
 
   it('sends an auto reply through the channel when a customer messages', async () => {
     const { ctx } = await harness([
-      toolCallResponse('call_reply_1', 'wecom.reply', { text: '您好，有什么可以帮您？' }),
+      toolCallResponse('call_reply_1', 'wecom_reply', { text: '您好，有什么可以帮您？' }),
       textResponse(''),
     ])
     const mock = ctx.wecomAdapter as MockWecomAdapter
@@ -121,7 +121,7 @@ describe('wecom-channel', () => {
 
   it('maps one external chat to one stable Harness session', async () => {
     const { ctx } = await harness([
-      toolCallResponse('call_reply_1', 'wecom.reply', { text: '第一段回复' }),
+      toolCallResponse('call_reply_1', 'wecom_reply', { text: '第一段回复' }),
       textResponse(''),
       textResponse('好的'),
     ])

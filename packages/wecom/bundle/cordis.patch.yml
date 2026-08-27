@@ -20,8 +20,10 @@
       name: '@deepseek-ai/dsh-wecom-channel/vworkapi-adapter'
       config:
         injectToolPath: 'D:\worksoft\WeiClaw\resources\vworkApi\inject_tool.exe'
+        wecomExePath: 'D:\worksoft\WXWork\WXWork.exe'
         dllPort: 8989
         callbackPort: 9000
+        killWecomBeforeStart: true
 
     - id: wecom-channel-gateway
       name: '@deepseek-ai/dsh-wecom-channel/gateway'
