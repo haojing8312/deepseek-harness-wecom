@@ -7,6 +7,7 @@
  */
 
 import { createHash } from 'node:crypto'
+import { isAbsolute, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
@@ -43,6 +44,8 @@ export interface Config {
   autoReply?: boolean
   /** Per-customer outbound message rate cap per minute. */
   rateLimitPerMinute?: number
+  /** Absolute path of the read-only customer knowledge base. */
+  knowledgeRoot?: string
 }
 
 export const Config: z<Config> = z.object({
@@ -54,6 +57,7 @@ export const Config: z<Config> = z.object({
   wecomVersion: z.string(),
   autoReply: z.boolean().default(true),
   rateLimitPerMinute: z.number().step(1).min(0).default(20),
+  knowledgeRoot: z.string().default('docs-wecom/knowledge'),
 })
 
 export function apply(ctx: Context, config: Config): void {
@@ -95,6 +99,7 @@ export function apply(ctx: Context, config: Config): void {
 
   ctx.provide('wecomChannelService', {
     adapter: channel,
+    knowledgeRoot: resolveKnowledgeRoot(config.knowledgeRoot),
     externalChatFor(sessionId) {
       return bySession.get(sessionId)
     },
@@ -115,7 +120,13 @@ export function apply(ctx: Context, config: Config): void {
     return { provider: config.provider ?? 'mock', model: config.model ?? 'mock' }
   }
 
-  /** Stable session identity for one external chat, so the mapping survives restart. */
+  /** Resolve the knowledge base root to an absolute path (relative to cwd). */
+function resolveKnowledgeRoot(root: string | undefined): string {
+  const value = root ?? 'docs-wecom/knowledge'
+  return isAbsolute(value) ? value : resolve(value)
+}
+
+/** Stable session identity for one external chat, so the mapping survives restart. */
   function wecomSessionId(externalChatId: string): SessionId {
     const digest = createHash('sha1').update(externalChatId).digest('hex').slice(0, 32)
     return SessionId(`wecom-${digest}`)

@@ -49,6 +49,8 @@ export interface WecomChannelAdapter {
 export interface WecomChannelService {
   /** The active channel adapter. */
   readonly adapter: WecomChannelAdapter
+  /** Absolute path of the read-only knowledge base the tools search. */
+  readonly knowledgeRoot: string
   /** The external chat id a session belongs to, when it is a WeCom session. */
   externalChatFor(sessionId: SessionId): string | undefined
   /** The session id an external chat is mapped to, when one exists. */
