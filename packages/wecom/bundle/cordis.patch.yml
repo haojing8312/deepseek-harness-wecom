@@ -6,8 +6,22 @@
 # The `customer` preset itself ships in the app's agent-presets root
 # (apps/cli/config/agent-presets/customer).
 - insert:
+    # The mock adapter keeps `dsh web` bootable without a WeCom client. To use
+    # the real DLL injection, disable this row and enable wecom-adapter-vworkapi
+    # below (see the live-setup notes in docs-wecom/plan.md).
     - id: wecom-adapter-mock
       name: '@deepseek-ai/dsh-wecom-channel/mock-adapter'
+
+    # Real vworkApi.dll injection adapter (pinned WeCom 5.0.3.6005). Requires the
+    # client installed + logged in; points at the authorized DLL in the WeiClaw
+    # installation.
+    - id: wecom-adapter-vworkapi
+      name: '@deepseek-ai/dsh-wecom-channel/vworkapi-adapter'
+      disabled: true
+      config:
+        injectToolPath: 'D:\worksoft\WeiClaw\resources\vworkApi\inject_tool.exe'
+        dllPort: 8989
+        callbackPort: 9000
 
     - id: wecom-channel-gateway
       name: '@deepseek-ai/dsh-wecom-channel/gateway'

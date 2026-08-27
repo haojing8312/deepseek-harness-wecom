@@ -51,7 +51,11 @@
       "default": "./lib/invariant.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./vworkapi-adapter": {
+      "types": "./lib/types/vworkapi-adapter.d.ts",
+      "default": "./lib/types/vworkapi-adapter.js"
+    }
   },
   "files": [
     "lib/index.js",

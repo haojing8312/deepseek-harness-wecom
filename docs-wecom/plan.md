@@ -192,3 +192,13 @@
 - `_reference/WeiClaw-analysis/WeiClaw技术方案.md` — 对标架构与实现细节（注入 §3、消息流水线 §6、安全 §13、合规 §14）
 - `docs/architecture.md` — DSH 架构（扩展点权威说明）
 - `docs/cookbook/extension-cookbook.md` — 能力到扩展点映射
+
+## 10. vworkApi 实机验证（M1 交付点）
+
+真实适配器 `@deepseek-ai/dsh-wecom-channel/vworkapi-adapter` 已实现（协议见参考 §3，含注入/命令/回调，单测覆盖）。要实机验证：
+
+1. **安装固定版企微客户端**：运行 `D:\worksoft\WeiClaw\resources\wecom\WeCom_5.0.3.6005.exe`，用测试企微账号登录（确认版本 5.0.3.6005）。
+2. **切换适配器**：编辑 `packages/wecom/bundle/cordis.patch.yml`，禁用 `wecom-adapter-mock`、启用 `wecom-adapter-vworkapi`（DLL 路径/端口已配好，key 用内嵌专业版 key）。重启 `pnpm dsh web`。
+3. **验证**：Web UI 企微卡片状态点应显示"在线"；给该企微账号发一条微信消息，应触发客户会话节点 + 自动回复。
+4. **注意**：企微版本升级会破坏注入（R-2）——参考 §3.6 硬化设置（关闭自动更新/自动登录调整）。vworkApi 是单线程 HTTP，多开需端口递增。
+
