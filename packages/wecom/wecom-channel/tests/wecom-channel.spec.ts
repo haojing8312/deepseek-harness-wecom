@@ -153,4 +153,20 @@ describe('wecom-channel', () => {
     expect(title?.type === 'session/title' && title.data.title).toBe('企微客户 ext-200')
     await ctx.fiber.dispose()
   })
+
+  it('serializes concurrent messages for one customer without a resume race', async () => {
+    const { ctx } = await harness([textResponse('ok'), textResponse('ok')])
+    const mock = ctx.wecomAdapter as MockWecomAdapter
+    await Promise.all([
+      mock.simulate({ externalChatId: 'ext-race', text: '第一条' }),
+      mock.simulate({ externalChatId: 'ext-race', text: '第二条' }),
+    ])
+    const agent = ctx.wecomChannelService.agentFor('ext-race')
+    const wecomMessages = agent!.session.events.filter(
+      (event) => event.type === 'user/message' && event.data.source.kind === 'wecom',
+    )
+    expect(wecomMessages).toHaveLength(2)
+    expect(agent!.session.events.filter((event) => event.type === 'wecom/session')).toHaveLength(1)
+    await ctx.fiber.dispose()
+  })
 })

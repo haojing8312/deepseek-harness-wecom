@@ -105,6 +105,10 @@ export function apply(ctx: Context, config: Config): void {
   const byExternal = new Map<string, SessionId>()
   const bySession = new Map<SessionId, string>()
   const live = new Map<string, Agent>()
+  // In-flight ensureAgent per external chat: the DLL may deliver callbacks for
+  // the same chat concurrently, and two racing resumes of one persisted session
+  // collide in the persistence coordinator ("cannot prepare while it is live").
+  const ensuring = new Map<string, Promise<Agent>>()
 
   ctx.provide('wecomChannelService', {
     adapter: channel,
@@ -144,6 +148,14 @@ function resolveKnowledgeRoot(root: string | undefined): string {
   async function ensureAgent(externalChatId: string): Promise<Agent> {
     const existing = live.get(externalChatId)
     if (existing !== undefined) return existing
+    const inFlight = ensuring.get(externalChatId)
+    if (inFlight !== undefined) return inFlight
+    const promise = doEnsure(externalChatId).finally(() => { ensuring.delete(externalChatId) })
+    ensuring.set(externalChatId, promise)
+    return promise
+  }
+
+  async function doEnsure(externalChatId: string): Promise<Agent> {
     const sessionId = wecomSessionId(externalChatId)
     const selection = await resolveSelection()
     const agentOptions = { provider: selection.provider, model: selection.model }
