@@ -69,19 +69,21 @@ export function apply(ctx: ClientContext): void {
 
   const wecomKnowledge = knowledgeOps(ctx)
 
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: WECOM_SETTINGS_NS,
-    inject: (): WecomSettingsInjected => ({
-      scope: ctx.settingsScope.bind({ namespace: WECOM_SETTINGS_NS }) as SettingsScope<WecomSettingsValue>,
-    }),
-  }, WecomSettingsCard))
+  ctx.slots.inject('settings.plugin.item', function* () {
+    yield ctx.slots.register({
+      name: 'settings.plugin.item',
+      key: WECOM_SETTINGS_NS,
+      inject: (): WecomSettingsInjected => ({
+        scope: ctx.settingsScope.bind({ namespace: WECOM_SETTINGS_NS }) as SettingsScope<WecomSettingsValue>,
+      }),
+    }, WecomSettingsCard)
 
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: WECOM_KNOWLEDGE_NS,
-    inject: (): WecomKnowledgeInjected => ({
-      knowledge: wecomKnowledge,
-    }),
-  }, WecomKnowledgeCard))
+    yield ctx.slots.register({
+      name: 'settings.plugin.item',
+      key: WECOM_KNOWLEDGE_NS,
+      inject: (): WecomKnowledgeInjected => ({
+        knowledge: wecomKnowledge,
+      }),
+    }, WecomKnowledgeCard)
+  })
 }
