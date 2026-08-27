@@ -18,7 +18,7 @@ import {
 } from './wecom-knowledge-card.ts'
 
 /** Required services for the Definition, keyed renderer, status seat, and settings cards. */
-export const inject = ['conversationEvents', 'slots', 'remote.wecomChannel', 'settingsScope']
+export const inject = ['conversationEvents', 'slots', 'remote', 'remote.wecomChannel', 'settingsScope']
 
 function remoteError(error: unknown): string {
   if (typeof error === 'string') return error
