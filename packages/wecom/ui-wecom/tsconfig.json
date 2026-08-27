@@ -18,6 +18,12 @@
       "path": "../../client/ui-conversation"
     },
     {
+      "path": "../../client/ui-settings"
+    },
+    {
+      "path": "../../client/ui-settings-plugins"
+    },
+    {
       "path": "../../client/ui-slots"
     },
     {

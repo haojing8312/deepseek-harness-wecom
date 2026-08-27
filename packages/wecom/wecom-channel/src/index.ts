@@ -12,6 +12,7 @@ import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
+import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 // Type-only: brings the `ctx.agentPresets` Context augmentation into scope.
 import type {} from '@deepseek-ai/dsh-agent-presets'
 import type { WecomChannelService, WecomInboundMessage } from './types.ts'
@@ -19,22 +20,51 @@ import type { WecomChannelService, WecomInboundMessage } from './types.ts'
 export const name = 'wecom-channel'
 export const inject = ['agents']
 
+/** Settings namespace for the WeCom workbench injection configuration. */
+export const WECOM_SETTINGS_NAMESPACE = settingsNamespace('wecom')
+
 export interface Config {
   /** Agent preset every external-customer session is composed from. */
   preset?: string
   /** Provider/model fallback when no default-model service is composed. */
   provider?: string
   model?: string
+  /** Active channel adapter; the DLL provider is a future swap. */
+  adapter?: 'mock' | 'vworkapi'
+  /** Installed WeCom PC client path, for DLL injection. */
+  wecomClientPath?: string
+  /** Pinned WeCom client version the injection targets. */
+  wecomVersion?: string
+  /** Whether inbound customer messages auto-reply (no manual approval). */
+  autoReply?: boolean
+  /** Per-customer outbound message rate cap per minute. */
+  rateLimitPerMinute?: number
 }
 
 export const Config: z<Config> = z.object({
   preset: z.string().default('customer'),
   provider: z.string(),
   model: z.string(),
+  adapter: z.union(['mock', 'vworkapi'] as const).default('mock'),
+  wecomClientPath: z.string(),
+  wecomVersion: z.string(),
+  autoReply: z.boolean().default(true),
+  rateLimitPerMinute: z.number().step(1).min(0).default(20),
 })
 
 export function apply(ctx: Context, config: Config): void {
   const preset = config.preset ?? 'customer'
+  // The effective settings layer (user document over the assembly defaults),
+  // kept current by the settings section; the driver reads it for behaviors
+  // that vary by deployment.
+  let source = () => config
+  installSettingsSection(ctx, WECOM_SETTINGS_NAMESPACE, Config, config, {
+    setSource: (current) => { source = current },
+    onChange: () => {
+      const current = source()
+      ctx.logger.info(`wecom settings changed: adapter=${current.adapter ?? 'mock'}, autoReply=${current.autoReply ?? true}`)
+    },
+  })
   // Host-plane values published by sibling plugins; read them through the
   // global service store (`ctx.get`), never the property proxy, so async
   // handlers running under another fiber still resolve them.
