@@ -6,15 +6,16 @@
  * @module @deepseek-ai/dsh-wecom-channel
  */
 
-import { randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 // Type-only: brings the `ctx.agentPresets` Context augmentation into scope.
 import type {} from '@deepseek-ai/dsh-agent-presets'
+import type {} from '@deepseek-ai/dsh-session-persistence'
 import type { WecomChannelService, WecomInboundMessage } from './types.ts'
 
 export const name = 'wecom-channel'
@@ -111,20 +112,42 @@ export function apply(ctx: Context, config: Config): void {
     return { provider: config.provider ?? 'mock', model: config.model ?? 'mock' }
   }
 
+  /** Stable session identity for one external chat, so the mapping survives restart. */
+  function wecomSessionId(externalChatId: string): SessionId {
+    const digest = createHash('sha1').update(externalChatId).digest('hex').slice(0, 32)
+    return SessionId(`wecom-${digest}`)
+  }
+
   async function ensureAgent(externalChatId: string): Promise<Agent> {
     const existing = live.get(externalChatId)
     if (existing !== undefined) return existing
-    const sessionId = SessionId(`wecom-${randomUUID()}`)
+    const sessionId = wecomSessionId(externalChatId)
     const selection = await resolveSelection()
-    const handle = await registry.create({
-      sessionId,
-      meta: { agentPreset: preset },
-      agentOptions: { provider: selection.provider, model: selection.model },
-      setup: async (agentCtx) => {
-        await presetRoster.mount(agentCtx, preset)
-      },
-    })
-    handle.agent.session.append('wecom/session', { externalChatId })
+    const agentOptions = { provider: selection.provider, model: selection.model }
+    const setup = async (agentCtx: Context): Promise<void> => {
+      await presetRoster.mount(agentCtx, preset)
+    }
+    const persistence = ctx.get('sessionPersistence')
+    const persisted = persistence !== undefined
+      && (await persistence.list()).some((meta) => meta.id === sessionId)
+    // Resume the persisted session (context continuity across restart) when the
+    // store holds it; otherwise create it fresh. Only a fresh session gets the
+    // `wecom/session` marker, which must stay unique per (kind, externalChatId).
+    let handle: AgentHandle
+    let created: boolean
+    if (persisted) {
+      handle = await registry.resume({ resumeSessionId: sessionId, agentOptions, setup })
+      created = false
+    } else {
+      handle = await registry.create({
+        sessionId,
+        meta: { agentPreset: preset, cwd: process.cwd() },
+        agentOptions,
+        setup,
+      })
+      created = true
+    }
+    if (created) handle.agent.session.append('wecom/session', { externalChatId })
     byExternal.set(externalChatId, sessionId)
     bySession.set(sessionId, externalChatId)
     live.set(externalChatId, handle.agent)

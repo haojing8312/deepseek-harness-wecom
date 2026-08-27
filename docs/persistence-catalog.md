@@ -1005,3 +1005,21 @@ Source: [`packages/core/session/src/types.ts:264`](../packages/core/session/src/
 ```
 
 Source: [`packages/web/web-search-deepseek/src/provider.ts:83`](../packages/web/web-search-deepseek/src/provider.ts)
+
+### `wecom/*`
+
+<a id="wecomsession--log-only"></a>
+
+#### `wecom/session` — log-only
+
+```ts persistence-catalog
+/**
+ * Marks the session as a WeCom external-customer conversation. Emitted once
+ * by the channel driver when a customer session is created, before its first
+ * inbound message. A display/identity fact, not model-visible, so it needs
+ * no surface rendering.
+ */
+'wecom/session': { externalChatId: string; displayName?: string }
+```
+
+Source: [`packages/wecom/wecom-channel/src/session-events.ts:24`](../packages/wecom/wecom-channel/src/session-events.ts)
